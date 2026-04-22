@@ -5,6 +5,23 @@ import seaborn as sns
 import streamlit as st
 from datetime import date
 
+pitch_dict = {
+    'FF': 'Four-Seam Fastball',
+    'SI': 'Sinker',
+    'FC': 'Cutter',
+    'SL': 'Slider',
+    'ST': 'Sweeper',
+    'CH': 'Changeup',
+    'CU': 'Curveball',
+    'KC': 'Knuckle Curve',
+    'FS': 'Splitter',
+    'SV': 'Slurve',
+    'KN': 'Knuckleball',
+    'EP': 'Eephus',
+    'FO': 'Forkball',
+    'PO': 'Pitchout'
+}
+
 with st.form("pitcher_lookup_form"):
 
     col1, col2 = st.columns(2)
@@ -42,11 +59,12 @@ with st.form("pitcher_lookup_form"):
             df = df[df['game_type'] == 'R']
             df['pfx_x_in'] = df['pfx_x'] * 12
             df['pfx_z_in'] = df['pfx_z'] * 12
+            df['pitch_name'] = df['pitch_type'].map(pitch_dict).fillna(df['pitch_type'])
 
             if not df.empty:
 
                 fig,ax = plt.subplots()
-                sns.scatterplot(data=df, x='pfx_x_in', y='pfx_z_in', hue='pitch_type', alpha=0.7, ax=ax)
+                sns.scatterplot(data=df, x='pfx_x_in', y='pfx_z_in', hue='pitch_name', alpha=0.7, ax=ax)
                 ax.axhline(0, color='black', linestyle='--', linewidth=1, alpha=0.5)
                 ax.axvline(0, color='black', linestyle='--', linewidth=1, alpha=0.5)
                 ax.set(xlabel='Horizontal Movement (inches)', ylabel='Vertical Movement (inches)', title=f"{fst_name} {lst_name} Pitch Movement")

@@ -22,6 +22,11 @@ pitch_dict = {
     'PO': ('Pitchout', '#292929')
 }
 
+@st.cache_data
+def load_pitcher_data(season_year, player_id):
+    # This will only run ONCE per player/season combination
+    return statcast_pitcher(f"{season_year}-01-01", f"{season_year}-12-31", player_id)
+
 with st.form("pitcher_lookup_form"):
 
     col1, col2 = st.columns(2)
@@ -56,7 +61,7 @@ with st.form("pitcher_lookup_form"):
         if not plyr_res.empty: 
             plyr_id = plyr_res['key_mlbam'].values[0]
 
-            plyr_ptch = statcast_pitcher(f"{season}-01-01", f"{season}-12-31", plyr_id)
+            plyr_ptch = load_pitcher_data(season, plyr_id)
 
             df = pd.DataFrame(plyr_ptch)
             df = df[df['game_type'] == 'R']
@@ -100,7 +105,7 @@ with st.form("pitcher_lookup_form"):
                 sns.scatterplot(data=df, x='pfx_x_in', y='pfx_z_in', hue='legend_label', palette=dynamic_colors, hue_order=ordered_labels, alpha=0.7, ax=ax)
                 ax.axhline(0, color='black', linestyle='--', linewidth=1, alpha=0.5)
                 ax.axvline(0, color='black', linestyle='--', linewidth=1, alpha=0.5)
-                ax.set(xlabel='Horizontal Movement (inches)', ylabel='Vertical Movement (inches)', title=f"{fst_name} {lst_name} {season} Pitch Movement ({batter_handedness})")
+                ax.set(xlabel='Horizontal Movement (inches)', ylabel='Vertical Movement (inches)', title=f"{fst_name} {lst_name} {season} Pitch Movement ({batter_handedness}) ({total_pitches} Pitches)")
 
                 plt.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0.)
 

@@ -61,10 +61,19 @@ with st.form("pitcher_lookup_form"):
             df['pfx_z_in'] = df['pfx_z'] * 12
             df['pitch_name'] = df['pitch_type'].map(pitch_dict).fillna(df['pitch_type'])
 
+            stats = df.groupby('pitch_name').agg(
+                count=('pitch_name', 'count'),
+                avg_velo=('release_speed', 'mean'),
+                avg_spin=('release_spin_rate', 'mean')
+            ).reset_index()
+
+            total_pitches = len(df)
+            stats['legend_label'] = stats.apply(lambda x: f"{x['pitch_name']} ({((x['count'] / total_pitches) * 100):.1f}% | {x['avg_velo']:.1f} mph | {x['avg_spin']:.0f} rpm)", axis=1)            
+            df = df.merge(stats[['pitch_name', 'legend_label']], on='pitch_name', how='left')
             if not df.empty:
 
                 fig,ax = plt.subplots()
-                sns.scatterplot(data=df, x='pfx_x_in', y='pfx_z_in', hue='pitch_name', alpha=0.7, ax=ax)
+                sns.scatterplot(data=df, x='pfx_x_in', y='pfx_z_in', hue='legend_label', alpha=0.7, ax=ax)
                 ax.axhline(0, color='black', linestyle='--', linewidth=1, alpha=0.5)
                 ax.axvline(0, color='black', linestyle='--', linewidth=1, alpha=0.5)
                 ax.set(xlabel='Horizontal Movement (inches)', ylabel='Vertical Movement (inches)', title=f"{fst_name} {lst_name} Pitch Movement")

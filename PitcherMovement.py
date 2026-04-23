@@ -6,20 +6,20 @@ import streamlit as st
 from datetime import date
 
 pitch_dict = {
-    'FF': 'Four-Seam Fastball',
-    'SI': 'Sinker',
-    'FC': 'Cutter',
-    'SL': 'Slider',
-    'ST': 'Sweeper',
-    'CH': 'Changeup',
-    'CU': 'Curveball',
-    'KC': 'Knuckle Curve',
-    'FS': 'Splitter',
-    'SV': 'Slurve',
-    'KN': 'Knuckleball',
-    'EP': 'Eephus',
-    'FO': 'Forkball',
-    'PO': 'Pitchout'
+    'FF': ('Four-Seam Fastball', '#D22D49'),
+    'SI': ('Sinker', '#FE9D00'),
+    'FC': ('Cutter', '#933F2C'),
+    'SL': ('Slider', '#EEE716'),
+    'ST': ('Sweeper', '#FDD26E'),
+    'CH': ('Changeup', '#1DBE3A'),
+    'CU': ('Curveball', '#00D1ED'),
+    'KC': ('Knuckle Curve', '#6236CD'),
+    'FS': ('Splitter', '#3BACAC'),
+    'SV': ('Slurve', '#D09ECC'),
+    'KN': ('Knuckleball', '#8A8A8A'),
+    'EP': ('Eephus', '#52AF56'),
+    'FO': ('Forkball', '#55CCAB'),
+    'PO': ('Pitchout', '#292929')
 }
 
 with st.form("pitcher_lookup_form"):
@@ -46,7 +46,7 @@ with st.form("pitcher_lookup_form"):
     plyr_res = playerid_lookup(lst_name,fst_name)
 
     batter_handedness = st.selectbox("Filter by Batter Handedness", ('All Batters', 'RHB', 'LHB'))
-    strikeouts_only = st.checkbox("Stikeouts Only")
+    strikeouts_only = st.checkbox("Strikeouts Only")
 
     submitted = st.form_submit_button("Generate Pitching Graph")
 
@@ -75,21 +75,29 @@ with st.form("pitcher_lookup_form"):
 
             df['pfx_x_in'] = df['pfx_x'] * 12
             df['pfx_z_in'] = df['pfx_z'] * 12
-            df['pitch_name'] = df['pitch_type'].map(pitch_dict).fillna(df['pitch_type'])
+            
+            df['pitch_name'] = df['pitch_type'].apply(lambda x: pitch_dict.get(x, (x, '#000000'))[0])
+            df['pitch_color'] = df['pitch_type'].apply(lambda x: pitch_dict.get(x, (x, '#000000'))[1])
 
-            stats = df.groupby('pitch_name').agg(
+            stats = df.groupby(['pitch_name', 'pitch_color']).agg(
                 count=('pitch_name', 'count'),
                 avg_velo=('release_speed', 'mean'),
                 avg_spin=('release_spin_rate', 'mean')
-            ).reset_index()
+            ).reset_index().sort_values(by='count', ascending=False).reset_index(drop=True)
 
             total_pitches = len(df)
+            
             stats['legend_label'] = stats.apply(lambda x: f"{x['pitch_name']} ({((x['count'] / total_pitches) * 100):.1f}% | {x['avg_velo']:.1f} mph | {x['avg_spin']:.0f} rpm)", axis=1)            
+            
+            ordered_labels = stats['legend_label'].tolist()
+            dynamic_colors = dict(zip(stats['legend_label'], stats['pitch_color']))
+            
             df = df.merge(stats[['pitch_name', 'legend_label']], on='pitch_name', how='left')
+            
             if not df.empty:
 
                 fig,ax = plt.subplots()
-                sns.scatterplot(data=df, x='pfx_x_in', y='pfx_z_in', hue='legend_label', alpha=0.7, ax=ax)
+                sns.scatterplot(data=df, x='pfx_x_in', y='pfx_z_in', hue='legend_label', palette=dynamic_colors, hue_order=ordered_labels, alpha=0.7, ax=ax)
                 ax.axhline(0, color='black', linestyle='--', linewidth=1, alpha=0.5)
                 ax.axvline(0, color='black', linestyle='--', linewidth=1, alpha=0.5)
                 ax.set(xlabel='Horizontal Movement (inches)', ylabel='Vertical Movement (inches)', title=f"{fst_name} {lst_name} {season} Pitch Movement ({batter_handedness})")

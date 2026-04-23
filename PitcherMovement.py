@@ -45,6 +45,9 @@ with st.form("pitcher_lookup_form"):
 
     plyr_res = playerid_lookup(lst_name,fst_name)
 
+    batter_handedness = st.selectbox("Filter by Batter Handedness", ('All Batters', 'RHB', 'LHB'))
+    strikeouts_only = st.checkbox("Stikeouts Only")
+
     submitted = st.form_submit_button("Generate Pitching Graph")
 
     fst_name, lst_name = fst_name.capitalize(), lst_name.capitalize()
@@ -57,6 +60,19 @@ with st.form("pitcher_lookup_form"):
 
             df = pd.DataFrame(plyr_ptch)
             df = df[df['game_type'] == 'R']
+            match batter_handedness:
+                case 'All Batters':
+                    pass
+                case 'RHB':
+                    df = df[df['stand'] == 'R']
+                case 'LHB':
+                    df = df[df['stand'] == 'L']
+                case _:
+                    pass
+
+            if strikeouts_only:
+                df = df[(df['strikes'] == 2) & (df['type'] == 'S')]
+
             df['pfx_x_in'] = df['pfx_x'] * 12
             df['pfx_z_in'] = df['pfx_z'] * 12
             df['pitch_name'] = df['pitch_type'].map(pitch_dict).fillna(df['pitch_type'])
@@ -76,13 +92,13 @@ with st.form("pitcher_lookup_form"):
                 sns.scatterplot(data=df, x='pfx_x_in', y='pfx_z_in', hue='legend_label', alpha=0.7, ax=ax)
                 ax.axhline(0, color='black', linestyle='--', linewidth=1, alpha=0.5)
                 ax.axvline(0, color='black', linestyle='--', linewidth=1, alpha=0.5)
-                ax.set(xlabel='Horizontal Movement (inches)', ylabel='Vertical Movement (inches)', title=f"{fst_name} {lst_name} Pitch Movement")
+                ax.set(xlabel='Horizontal Movement (inches)', ylabel='Vertical Movement (inches)', title=f"{fst_name} {lst_name} {season} Pitch Movement ({batter_handedness})")
 
                 plt.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0.)
 
                 st.pyplot(fig)
             else:
-                st.error(f"{fst_name} {lst_name} did not pitch in {season}.")
+                st.error(f"{fst_name} {lst_name} did not pitch in {season} against {batter_handedness}.")
         else:
             st.error(f"{fst_name} {lst_name} not found.")
 

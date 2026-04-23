@@ -71,7 +71,7 @@ with st.form("pitcher_lookup_form"):
                     pass
 
             if strikeouts_only:
-                df = df[(df['strikes'] == 2) & (df['type'] == 'S')]
+                df = df[df['events'] == 'strikeout']
 
             df['pfx_x_in'] = df['pfx_x'] * 12
             df['pfx_z_in'] = df['pfx_z'] * 12
